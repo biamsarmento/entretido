@@ -20,6 +20,10 @@
   box-sizing: border-box;
 }
 
+button, a, [role="button"] {
+  cursor: pointer;
+}
+
 html {
   background: #38080c;
   color: #f5f0e8;
