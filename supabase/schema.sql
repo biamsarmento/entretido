@@ -1,9 +1,20 @@
 -- ============================================================
--- ENTRETIDO — Schema SQL
--- Cole isso no SQL Editor do Supabase e execute
+-- ENTRETIDO — Script único: apaga tudo e recria do zero
+-- Cole tudo isso no SQL Editor e clique em Run
 -- ============================================================
 
--- Profiles (extends auth.users)
+-- 1. Limpa tudo (ordem importa por causa das FKs)
+drop table if exists public.watch_later cascade;
+drop table if exists public.recommendations cascade;
+drop table if exists public.group_members cascade;
+drop table if exists public.groups cascade;
+drop table if exists public.profiles cascade;
+drop function if exists public.handle_new_user() cascade;
+drop function if exists public.is_group_member(uuid) cascade;
+drop function if exists public.is_group_member(uuid, uuid) cascade;
+
+-- 2. Cria as tabelas e políticas
+
 create table public.profiles (
   id uuid references auth.users on delete cascade not null primary key,
   username text unique,
@@ -23,16 +34,12 @@ create policy "Usuário pode inserir seu próprio perfil" on public.profiles
 create policy "Usuário pode atualizar seu próprio perfil" on public.profiles
   for update using (auth.uid() = id);
 
--- Auto-cria perfil quando usuário faz cadastro
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, full_name, avatar_url)
-  values (
-    new.id,
-    new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'avatar_url'
-  );
+  values (new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url')
+  on conflict (id) do nothing;
   return new;
 end;
 $$ language plpgsql security definer;
@@ -41,7 +48,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- Groups
 create table public.groups (
   id uuid default gen_random_uuid() primary key,
   name text not null,
@@ -59,7 +65,6 @@ create policy "Usuário autenticado pode criar grupo" on public.groups
 create policy "Admin pode atualizar grupo" on public.groups
   for update using (created_by = auth.uid());
 
--- Group members
 create table public.group_members (
   id uuid default gen_random_uuid() primary key,
   group_id uuid references public.groups(id) on delete cascade not null,
@@ -71,13 +76,21 @@ create table public.group_members (
 
 alter table public.group_members enable row level security;
 
-create policy "Membros podem ver os membros do grupo" on public.group_members
-  for select using (
-    exists (
-      select 1 from public.group_members gm2
-      where gm2.group_id = group_members.group_id and gm2.user_id = auth.uid()
-    )
+create or replace function public.is_group_member(group_uuid uuid, user_uuid uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from group_members
+    where group_id = group_uuid and user_id = user_uuid
   );
+$$;
+
+create policy "Membros podem ver membros do grupo" on public.group_members
+  for select using (public.is_group_member(group_id, auth.uid()));
 
 create policy "Usuário autenticado pode entrar em grupo" on public.group_members
   for insert with check (auth.uid() is not null);
@@ -85,16 +98,9 @@ create policy "Usuário autenticado pode entrar em grupo" on public.group_member
 create policy "Usuário pode sair do próprio grupo" on public.group_members
   for delete using (user_id = auth.uid());
 
--- Policies de groups que dependem de group_members (criadas depois)
 create policy "Membros podem ver o grupo" on public.groups
-  for select using (
-    exists (
-      select 1 from public.group_members
-      where group_id = groups.id and user_id = auth.uid()
-    )
-  );
+  for select using (public.is_group_member(id, auth.uid()));
 
--- Recommendations
 create table public.recommendations (
   id uuid default gen_random_uuid() primary key,
   group_id uuid references public.groups(id) on delete cascade not null,
@@ -112,21 +118,12 @@ create table public.recommendations (
 
 alter table public.recommendations enable row level security;
 
-create policy "Membros podem ver indicações do grupo" on public.recommendations
-  for select using (
-    exists (
-      select 1 from public.group_members
-      where group_id = recommendations.group_id and user_id = auth.uid()
-    )
-  );
+create policy "Membros podem ver indicações" on public.recommendations
+  for select using (public.is_group_member(group_id, auth.uid()));
 
-create policy "Membros podem indicar no grupo" on public.recommendations
+create policy "Membros podem indicar" on public.recommendations
   for insert with check (
-    auth.uid() = user_id and
-    exists (
-      select 1 from public.group_members
-      where group_id = recommendations.group_id and user_id = auth.uid()
-    )
+    auth.uid() = user_id and public.is_group_member(group_id, auth.uid())
   );
 
 create policy "Quem indicou ou admin pode remover" on public.recommendations
@@ -138,7 +135,6 @@ create policy "Quem indicou ou admin pode remover" on public.recommendations
     )
   );
 
--- Watch later
 create table public.watch_later (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,

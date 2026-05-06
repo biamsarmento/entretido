@@ -2,16 +2,14 @@
 
 import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { createGroupAction } from '@/app/actions/groups'
 
 interface Props {
-  userId: string
   onClose: () => void
   onCreated: () => void
 }
 
-export default function CreateGroupModal({ userId, onClose, onCreated }: Props) {
-  const supabase = createClient()
+export default function CreateGroupModal({ onClose, onCreated }: Props) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
@@ -25,18 +23,14 @@ export default function CreateGroupModal({ userId, onClose, onCreated }: Props) 
 
     const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    const { data: group, error: groupError } = await supabase
-      .from('groups')
-      .insert({ name: name.trim(), description: description.trim() || null, created_by: userId, invite_code: inviteCode })
-      .select()
-      .single()
-
-    if (groupError) { setError('Erro ao criar grupo.'); setLoading(false); return }
-
-    await supabase.from('group_members').insert({ group_id: group.id, user_id: userId, role: 'admin' })
-
-    onCreated()
-    onClose()
+    try {
+      await createGroupAction(name.trim(), description.trim() || null, inviteCode)
+      onCreated()
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao criar grupo.')
+      setLoading(false)
+    }
   }
 
   return (

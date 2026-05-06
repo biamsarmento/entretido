@@ -119,14 +119,12 @@ export default function GroupsPage() {
 
       {showCreate && (
         <CreateGroupModal
-          userId={userId}
           onClose={() => setShowCreate(false)}
           onCreated={loadGroups}
         />
       )}
       {showJoin && (
         <JoinGroupModal
-          userId={userId}
           onClose={() => setShowJoin(false)}
         />
       )}

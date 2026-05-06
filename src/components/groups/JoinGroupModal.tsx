@@ -2,16 +2,14 @@
 
 import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { joinGroupAction } from '@/app/actions/groups'
 import { useRouter } from 'next/navigation'
 
 interface Props {
-  userId: string
   onClose: () => void
 }
 
-export default function JoinGroupModal({ userId, onClose }: Props) {
-  const supabase = createClient()
+export default function JoinGroupModal({ onClose }: Props) {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,35 +20,15 @@ export default function JoinGroupModal({ userId, onClose }: Props) {
     setLoading(true)
     setError('')
 
-    const { data: group } = await supabase
-      .from('groups')
-      .select('id, name')
-      .eq('invite_code', code.trim().toUpperCase())
-      .maybeSingle()
-
-    if (!group) {
-      setError('Código inválido. Verifique e tente novamente.')
+    try {
+      const group = await joinGroupAction(code)
+      onClose()
+      router.push(`/groups/${group.id}`)
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao entrar no grupo.')
       setLoading(false)
-      return
     }
-
-    const { error: memberError } = await supabase
-      .from('group_members')
-      .insert({ group_id: group.id, user_id: userId, role: 'member' })
-
-    if (memberError) {
-      if (memberError.code === '23505') {
-        setError('Você já faz parte desse grupo.')
-      } else {
-        setError('Erro ao entrar no grupo.')
-      }
-      setLoading(false)
-      return
-    }
-
-    onClose()
-    router.push(`/groups/${group.id}`)
-    router.refresh()
   }
 
   return (
