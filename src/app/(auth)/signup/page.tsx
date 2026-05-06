@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Film } from 'lucide-react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
@@ -17,12 +17,11 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-2xl font-bold text-primary mb-2">
-            <Film size={28} />
-            entretido
+        <div className="flex flex-col items-center mb-8">
+          <Link href="/">
+            <Image src="/brand/logo.png" alt="Entretido" width={260} height={86} className="object-contain" />
           </Link>
-          <p className="text-muted-foreground mt-2">Crie sua conta grátis</p>
+          <p className="text-muted-foreground mt-3">Crie sua conta grátis</p>
         </div>
 
         <div className="bg-card border border-muted rounded-2xl p-6">
