@@ -126,6 +126,7 @@ export default function GroupsPage() {
       {showJoin && (
         <JoinGroupModal
           onClose={() => setShowJoin(false)}
+          onJoined={loadGroups}
         />
       )}
     </div>

@@ -67,3 +67,23 @@ export async function joinGroupAction(inviteCode: string) {
 
   return group
 }
+
+export async function deleteGroupAction(groupId: string) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) throw new Error('Não autenticado')
+
+  const admin = createAdminClient()
+
+  const { data: group } = await admin
+    .from('groups')
+    .select('created_by')
+    .eq('id', groupId)
+    .single()
+
+  if (!group) throw new Error('Grupo não encontrado.')
+  if (group.created_by !== user.id) throw new Error('Apenas o criador pode apagar o grupo.')
+
+  const { error } = await admin.from('groups').delete().eq('id', groupId)
+  if (error) throw new Error('Erro ao apagar o grupo.')
+}

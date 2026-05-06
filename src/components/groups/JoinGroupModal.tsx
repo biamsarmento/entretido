@@ -7,9 +7,10 @@ import { useRouter } from 'next/navigation'
 
 interface Props {
   onClose: () => void
+  onJoined?: () => void
 }
 
-export default function JoinGroupModal({ onClose }: Props) {
+export default function JoinGroupModal({ onClose, onJoined }: Props) {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,9 +23,9 @@ export default function JoinGroupModal({ onClose }: Props) {
 
     try {
       const group = await joinGroupAction(code)
+      onJoined?.()
       onClose()
       router.push(`/groups/${group.id}`)
-      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao entrar no grupo.')
       setLoading(false)

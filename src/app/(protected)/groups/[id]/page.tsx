@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'next/navigation'
-import { Copy, Check, Plus, Users } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
+import { Copy, Check, Plus, Users, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import SearchMovies from '@/components/movies/SearchMovies'
 import RecommendationCard from '@/components/movies/RecommendationCard'
 import MovieModal from '@/components/movies/MovieModal'
+import { deleteGroupAction } from '@/app/actions/groups'
 import type { Recommendation, TMDBSearchResult } from '@/types'
 
 interface GroupInfo {
@@ -19,6 +20,7 @@ interface GroupInfo {
 
 export default function GroupPage() {
   const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const supabase = createClient()
 
   const [group, setGroup] = useState<GroupInfo | null>(null)
@@ -30,6 +32,8 @@ export default function GroupPage() {
   const [showSearch, setShowSearch] = useState(false)
   const [selectedRec, setSelectedRec] = useState<{ tmdbId: number; mediaType: 'movie' | 'tv' } | null>(null)
   const [memberCount, setMemberCount] = useState(0)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
@@ -88,6 +92,18 @@ export default function GroupPage() {
     setTimeout(() => setCodeCopied(false), 2000)
   }
 
+  async function handleDelete() {
+    if (!id) return
+    setDeleting(true)
+    try {
+      await deleteGroupAction(id)
+      router.push('/groups')
+    } catch {
+      setDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="px-6 py-8 max-w-5xl mx-auto">
@@ -132,13 +148,24 @@ export default function GroupPage() {
             </button>
           </div>
         </div>
-        <button
-          onClick={() => setShowSearch(!showSearch)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors self-start flex-shrink-0"
-        >
-          <Plus size={16} />
-          Indicar título
-        </button>
+        <div className="flex items-center gap-2 self-start shrink-0">
+          {group.created_by === userId && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center gap-2 px-3 py-2 border border-red-500/40 text-red-400 hover:bg-red-500/10 rounded-lg text-sm transition-colors"
+              title="Apagar grupo"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+          <button
+            onClick={() => setShowSearch(!showSearch)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            <Plus size={16} />
+            Indicar título
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -175,6 +202,34 @@ export default function GroupPage() {
           mediaType={selectedRec.mediaType}
           onClose={() => setSelectedRec(null)}
         />
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="relative bg-card border border-muted rounded-2xl w-full max-w-sm p-6 z-10" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold mb-2">Apagar grupo</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Tem certeza? Todas as indicações do grupo serão apagadas permanentemente.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 py-2.5 border border-muted rounded-lg text-sm hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                {deleting ? 'Apagando...' : 'Apagar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
