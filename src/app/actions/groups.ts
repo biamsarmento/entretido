@@ -95,7 +95,7 @@ export async function uploadGroupAvatarAction(groupId: string, formData: FormDat
     .from('group-avatars')
     .upload(path, buffer, { contentType: file.type, upsert: true })
 
-  if (uploadError) throw new Error(`Upload falhou: ${uploadError.message}`)
+  if (uploadError) throw new Error('Erro ao fazer upload da imagem.')
 
   const { data: { publicUrl } } = admin.storage.from('group-avatars').getPublicUrl(path)
 

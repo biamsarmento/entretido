@@ -152,6 +152,16 @@ create table public.watch_later (
 
 alter table public.watch_later enable row level security;
 
+create table public.comments (
+  id uuid default gen_random_uuid() primary key,
+  recommendation_id uuid references public.recommendations(id) on delete cascade not null,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  content text not null check (char_length(content) > 0),
+  created_at timestamptz default now() not null
+);
+
+alter table public.comments disable row level security;
+
 create policy "Usuário vê sua própria lista" on public.watch_later
   for select using (user_id = auth.uid());
 

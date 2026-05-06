@@ -8,6 +8,7 @@ import SearchMovies from '@/components/movies/SearchMovies'
 import RecommendationCard from '@/components/movies/RecommendationCard'
 import MovieModal from '@/components/movies/MovieModal'
 import { deleteGroupAction, uploadGroupAvatarAction } from '@/app/actions/groups'
+import CommentsModal from '@/components/groups/CommentsModal'
 import Image from 'next/image'
 import type { Recommendation, TMDBSearchResult } from '@/types'
 
@@ -37,6 +38,7 @@ export default function GroupPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [selectedComment, setSelectedComment] = useState<{ recId: string; title: string } | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -130,7 +132,7 @@ export default function GroupPage() {
         <div className="h-4 w-32 bg-card rounded animate-pulse mb-8" />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="aspect-[2/3] bg-card rounded-xl animate-pulse" />
+            <div key={i} className="aspect-2/3 bg-card rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -241,6 +243,7 @@ export default function GroupPage() {
               onClick={() => setSelectedRec({ tmdbId: rec.tmdb_id, mediaType: rec.media_type })}
               onRemove={() => handleRemove(rec.id)}
               canRemove={rec.user_id === userId || group.created_by === userId}
+              onComment={() => setSelectedComment({ recId: rec.id, title: rec.title })}
             />
           ))}
         </div>
@@ -251,6 +254,15 @@ export default function GroupPage() {
           tmdbId={selectedRec.tmdbId}
           mediaType={selectedRec.mediaType}
           onClose={() => setSelectedRec(null)}
+        />
+      )}
+
+      {selectedComment && userId && (
+        <CommentsModal
+          recommendationId={selectedComment.recId}
+          title={selectedComment.title}
+          userId={userId}
+          onClose={() => setSelectedComment(null)}
         />
       )}
 
