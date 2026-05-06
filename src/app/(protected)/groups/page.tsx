@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Plus, Hash, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import CreateGroupModal from '@/components/groups/CreateGroupModal'
@@ -11,6 +12,7 @@ interface Group {
   id: string
   name: string
   description: string | null
+  avatar_url: string | null
   invite_code: string
   member_count?: number
 }
@@ -27,7 +29,7 @@ export default function GroupsPage() {
     if (!userId) return
     const { data } = await supabase
       .from('group_members')
-      .select('groups(id, name, description, invite_code)')
+      .select('groups(id, name, description, avatar_url, invite_code)')
       .eq('user_id', userId)
     const list: Group[] = (data ?? [])
       .flatMap((m) => (Array.isArray(m.groups) ? m.groups : m.groups ? [m.groups] : []))
@@ -102,8 +104,12 @@ export default function GroupsPage() {
               href={`/groups/${group.id}`}
               className="flex items-center gap-4 bg-card border border-muted hover:border-primary/50 rounded-xl p-4 transition-colors"
             >
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
-                {group.name[0].toUpperCase()}
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0 overflow-hidden">
+                {group.avatar_url ? (
+                  <Image src={group.avatar_url} alt={group.name} width={48} height={48} className="object-cover w-full h-full" />
+                ) : (
+                  group.name[0].toUpperCase()
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium">{group.name}</p>
