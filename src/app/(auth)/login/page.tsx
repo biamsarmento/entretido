@@ -1,33 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { Film } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Eye, EyeOff, Film } from 'lucide-react'
 
 export default function LoginPage() {
-  const router = useRouter()
   const supabase = createClient()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPass, setShowPass] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  async function handleEmailLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError('E-mail ou senha incorretos.')
-      setLoading(false)
-    } else {
-      router.push('/dashboard')
-      router.refresh()
-    }
-  }
 
   async function handleGoogleLogin() {
     await supabase.auth.signInWithOAuth({
@@ -47,7 +25,7 @@ export default function LoginPage() {
           <p className="text-muted-foreground mt-2">Bem-vindo de volta</p>
         </div>
 
-        <div className="bg-card border border-muted rounded-2xl p-6 space-y-4">
+        <div className="bg-card border border-muted rounded-2xl p-6">
           <button
             onClick={handleGoogleLogin}
             className="w-full flex items-center justify-center gap-3 py-3 border border-muted rounded-lg text-sm font-medium hover:bg-muted transition-colors"
@@ -60,7 +38,11 @@ export default function LoginPage() {
             </svg>
             Continuar com Google
           </button>
+        </div>
 
+        {/* Email/password login — desativado temporariamente */}
+        {/*
+        <div className="bg-card border border-muted rounded-2xl p-6 space-y-4">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-muted" />
@@ -121,6 +103,7 @@ export default function LoginPage() {
             Criar conta
           </Link>
         </p>
+        */}
       </div>
     </div>
   )

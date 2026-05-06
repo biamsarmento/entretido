@@ -1,68 +1,17 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { Film } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Eye, EyeOff, Film } from 'lucide-react'
 
 export default function SignupPage() {
-  const router = useRouter()
   const supabase = createClient()
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPass, setShowPass] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault()
-    if (password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres.')
-      return
-    }
-    setLoading(true)
-    setError('')
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      setSuccess(true)
-    }
-  }
 
   async function handleGoogleLogin() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     })
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center max-w-sm">
-          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Film size={32} className="text-primary" />
-          </div>
-          <h2 className="text-xl font-bold mb-2">Confirme seu e-mail</h2>
-          <p className="text-muted-foreground text-sm">
-            Enviamos um link de confirmação para <strong className="text-foreground">{email}</strong>.
-            Verifique sua caixa de entrada.
-          </p>
-          <Link href="/login" className="mt-6 inline-block text-sm text-primary hover:underline">
-            Voltar para o login
-          </Link>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -76,7 +25,7 @@ export default function SignupPage() {
           <p className="text-muted-foreground mt-2">Crie sua conta grátis</p>
         </div>
 
-        <div className="bg-card border border-muted rounded-2xl p-6 space-y-4">
+        <div className="bg-card border border-muted rounded-2xl p-6">
           <button
             onClick={handleGoogleLogin}
             className="w-full flex items-center justify-center gap-3 py-3 border border-muted rounded-lg text-sm font-medium hover:bg-muted transition-colors"
@@ -89,7 +38,11 @@ export default function SignupPage() {
             </svg>
             Continuar com Google
           </button>
+        </div>
 
+        {/* Cadastro por email/senha — desativado temporariamente */}
+        {/*
+        <div className="bg-card border border-muted rounded-2xl p-6 space-y-4">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-muted" />
@@ -161,6 +114,7 @@ export default function SignupPage() {
             Entrar
           </Link>
         </p>
+        */}
       </div>
     </div>
   )
