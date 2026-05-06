@@ -1,19 +1,21 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Copy, Check, Plus, Users, Trash2 } from 'lucide-react'
+import { Copy, Check, Plus, Users, Trash2, Camera } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import SearchMovies from '@/components/movies/SearchMovies'
 import RecommendationCard from '@/components/movies/RecommendationCard'
 import MovieModal from '@/components/movies/MovieModal'
-import { deleteGroupAction } from '@/app/actions/groups'
+import { deleteGroupAction, uploadGroupAvatarAction } from '@/app/actions/groups'
+import Image from 'next/image'
 import type { Recommendation, TMDBSearchResult } from '@/types'
 
 interface GroupInfo {
   id: string
   name: string
   description: string | null
+  avatar_url: string | null
   invite_code: string
   created_by: string | null
 }
@@ -34,6 +36,8 @@ export default function GroupPage() {
   const [memberCount, setMemberCount] = useState(0)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
@@ -92,6 +96,21 @@ export default function GroupPage() {
     setTimeout(() => setCodeCopied(false), 2000)
   }
 
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !id) return
+    setUploadingAvatar(true)
+    try {
+      const formData = new FormData()
+      formData.append('avatar', file)
+      const url = await uploadGroupAvatarAction(id, formData)
+      setGroup((prev) => prev ? { ...prev, avatar_url: url } : prev)
+    } finally {
+      setUploadingAvatar(false)
+      if (avatarInputRef.current) avatarInputRef.current.value = ''
+    }
+  }
+
   async function handleDelete() {
     if (!id) return
     setDeleting(true)
@@ -134,18 +153,49 @@ export default function GroupPage() {
     <div className="px-6 py-8 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold">{group.name}</h1>
-          {group.description && <p className="text-muted-foreground mt-1">{group.description}</p>}
-          <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1"><Users size={14} /> {memberCount} membros</span>
-            <button
-              onClick={copyCode}
-              className="flex items-center gap-1.5 px-2.5 py-1 border border-muted rounded-lg hover:bg-muted transition-colors text-xs"
-            >
-              {codeCopied ? <Check size={13} className="text-primary" /> : <Copy size={13} />}
-              {codeCopied ? 'Copiado!' : `Código: ${group.invite_code}`}
-            </button>
+        <div className="flex items-start gap-4">
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
+              {group.avatar_url ? (
+                <Image src={group.avatar_url} alt={group.name} width={64} height={64} className="object-cover w-full h-full" />
+              ) : (
+                group.name[0].toUpperCase()
+              )}
+            </div>
+            {group.created_by === userId && (
+              <>
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute inset-0 rounded-2xl flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity disabled:opacity-60"
+                >
+                  <Camera size={20} className="text-white" />
+                </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+              </>
+            )}
+          </div>
+
+          <div>
+            <h1 className="text-2xl font-bold">{group.name}</h1>
+            {group.description && <p className="text-muted-foreground mt-1">{group.description}</p>}
+            <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1"><Users size={14} /> {memberCount} membros</span>
+              <button
+                onClick={copyCode}
+                className="flex items-center gap-1.5 px-2.5 py-1 border border-muted rounded-lg hover:bg-muted transition-colors text-xs"
+              >
+                {codeCopied ? <Check size={13} className="text-primary" /> : <Copy size={13} />}
+                {codeCopied ? 'Copiado!' : `Código: ${group.invite_code}`}
+              </button>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 self-start shrink-0">

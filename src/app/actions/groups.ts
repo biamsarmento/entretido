@@ -68,6 +68,44 @@ export async function joinGroupAction(inviteCode: string) {
   return group
 }
 
+export async function uploadGroupAvatarAction(groupId: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) throw new Error('Não autenticado')
+
+  const admin = createAdminClient()
+
+  const { data: group } = await admin
+    .from('groups')
+    .select('created_by')
+    .eq('id', groupId)
+    .single()
+
+  if (!group || group.created_by !== user.id) throw new Error('Apenas o criador pode alterar a foto.')
+
+  const file = formData.get('avatar') as File
+  if (!file || file.size === 0) throw new Error('Arquivo não encontrado.')
+  if (file.size > 5 * 1024 * 1024) throw new Error('A imagem deve ter no máximo 5 MB.')
+
+  const ext = file.name.split('.').pop()
+  const path = `${groupId}/avatar.${ext}`
+  const buffer = await file.arrayBuffer()
+
+  const { error: uploadError } = await admin.storage
+    .from('group-avatars')
+    .upload(path, buffer, { contentType: file.type, upsert: true })
+
+  if (uploadError) throw new Error(`Upload falhou: ${uploadError.message}`)
+
+  const { data: { publicUrl } } = admin.storage.from('group-avatars').getPublicUrl(path)
+
+  const urlWithCache = `${publicUrl}?t=${Date.now()}`
+
+  await admin.from('groups').update({ avatar_url: urlWithCache }).eq('id', groupId)
+
+  return urlWithCache
+}
+
 export async function deleteGroupAction(groupId: string) {
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()

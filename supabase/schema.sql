@@ -52,6 +52,7 @@ create table public.groups (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   description text,
+  avatar_url text,
   invite_code text unique not null,
   created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz default now() not null
