@@ -44,7 +44,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="px-6 py-8 max-w-4xl mx-auto">
+      <div className="px-6 pt-14 pb-8 max-w-4xl mx-auto">
         <div className="h-20 w-20 rounded-full bg-card animate-pulse mb-4" />
         <div className="h-6 w-40 bg-card rounded animate-pulse mb-8" />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -55,7 +55,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="px-6 py-8 max-w-4xl mx-auto">
+    <div className="px-6 pt-14 pb-8 max-w-4xl mx-auto">
       {/* Profile header */}
       <div className="flex items-center gap-4 mb-8">
         <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xl flex-shrink-0 overflow-hidden">

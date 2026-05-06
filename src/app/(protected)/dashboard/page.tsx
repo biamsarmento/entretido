@@ -35,7 +35,7 @@ export default async function DashboardPage() {
   const name = profile?.full_name || profile?.username || user?.email?.split('@')[0] || 'você'
 
   return (
-    <div className="px-6 py-8 max-w-4xl mx-auto">
+    <div className="px-6 pt-14 pb-8 max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Olá, {name.split(' ')[0]} 👋</h1>
         <p className="text-muted-foreground mt-1">O que vamos assistir hoje?</p>

@@ -127,7 +127,7 @@ export default function GroupPage() {
 
   if (loading) {
     return (
-      <div className="px-6 py-8 max-w-5xl mx-auto">
+      <div className="px-6 pt-14 pb-8 max-w-5xl mx-auto">
         <div className="h-8 w-48 bg-card rounded animate-pulse mb-2" />
         <div className="h-4 w-32 bg-card rounded animate-pulse mb-8" />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -152,7 +152,7 @@ export default function GroupPage() {
   const addedIds = recommendations.map((r) => r.tmdb_id)
 
   return (
-    <div className="px-6 py-8 max-w-5xl mx-auto">
+    <div className="px-6 pt-14 pb-8 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div className="flex items-start gap-4">

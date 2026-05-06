@@ -47,7 +47,7 @@ export default function GroupsPage() {
   if (!userId) return null
 
   return (
-    <div className="px-6 py-8 max-w-3xl mx-auto">
+    <div className="px-6 pt-14 pb-8 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold">Grupos</h1>
         <div className="flex gap-2">
