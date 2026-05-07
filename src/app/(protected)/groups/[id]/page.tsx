@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Copy, Check, Plus, Users, Trash2, Camera } from 'lucide-react'
+import { Copy, Check, Plus, Users, Trash2, Camera, ChevronLeft, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import SearchMovies from '@/components/movies/SearchMovies'
 import RecommendationCard from '@/components/movies/RecommendationCard'
@@ -20,6 +20,11 @@ interface GroupInfo {
   invite_code: string
   created_by: string | null
 }
+
+type SortOrder = 'recent' | 'az' | 'za' | 'year_desc' | 'year_asc'
+type MediaFilter = 'all' | 'movie' | 'tv'
+
+const PAGE_SIZE = 10
 
 export default function GroupPage() {
   const { id } = useParams<{ id: string }>()
@@ -40,6 +45,10 @@ export default function GroupPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [selectedComment, setSelectedComment] = useState<{ recId: string; title: string } | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all')
+  const [sortOrder, setSortOrder] = useState<SortOrder>('recent')
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
@@ -67,6 +76,39 @@ export default function GroupPage() {
   }, [id, userId])
 
   useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => { setCurrentPage(1) }, [mediaFilter, sortOrder])
+
+  const filtered = useMemo(() => {
+    let list = [...recommendations]
+
+    if (mediaFilter !== 'all') {
+      list = list.filter((r) => r.media_type === mediaFilter)
+    }
+
+    if (sortOrder === 'az') {
+      list.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'))
+    } else if (sortOrder === 'za') {
+      list.sort((a, b) => b.title.localeCompare(a.title, 'pt-BR'))
+    } else if (sortOrder === 'year_desc') {
+      list.sort((a, b) => {
+        const ya = a.release_date ? new Date(a.release_date).getFullYear() : 0
+        const yb = b.release_date ? new Date(b.release_date).getFullYear() : 0
+        return yb - ya
+      })
+    } else if (sortOrder === 'year_asc') {
+      list.sort((a, b) => {
+        const ya = a.release_date ? new Date(a.release_date).getFullYear() : Infinity
+        const yb = b.release_date ? new Date(b.release_date).getFullYear() : Infinity
+        return ya - yb
+      })
+    }
+
+    return list
+  }, [recommendations, mediaFilter, sortOrder])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   async function handleAddRecommendation(result: TMDBSearchResult) {
     if (!userId || !id) return
@@ -156,7 +198,6 @@ export default function GroupPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div className="flex items-start gap-4">
-          {/* Avatar */}
           <div className="relative shrink-0">
             <div className="w-16 h-16 rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
               {group.avatar_url ? (
@@ -228,25 +269,104 @@ export default function GroupPage() {
         </div>
       )}
 
+      {/* Filters */}
+      {recommendations.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          {/* Media type */}
+          <div className="flex rounded-lg border border-muted overflow-hidden text-sm">
+            {([['all', 'Todos'], ['movie', 'Filmes'], ['tv', 'Séries']] as [MediaFilter, string][]).map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setMediaFilter(val)}
+                className={`px-3 py-1.5 transition-colors ${mediaFilter === val ? 'bg-primary text-white' : 'hover:bg-muted text-muted-foreground'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort */}
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+            className="px-3 py-1.5 rounded-lg border border-muted bg-card text-sm text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+          >
+            <option value="recent">Mais recentes indicações</option>
+            <option value="year_desc">Ano: mais recentes</option>
+            <option value="year_asc">Ano: mais antigos</option>
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+          </select>
+
+          {/* Results count */}
+          <span className="text-xs text-muted-foreground ml-auto">
+            {filtered.length} título{filtered.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+      )}
+
       {/* Recommendations grid */}
-      {recommendations.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="bg-card border border-muted rounded-2xl p-12 text-center">
-          <p className="text-muted-foreground mb-2">Nenhuma indicação ainda.</p>
-          <p className="text-sm text-muted-foreground">Seja o primeiro a indicar um filme ou série!</p>
+          {recommendations.length === 0 ? (
+            <>
+              <p className="text-muted-foreground mb-2">Nenhuma indicação ainda.</p>
+              <p className="text-sm text-muted-foreground">Seja o primeiro a indicar um filme ou série!</p>
+            </>
+          ) : (
+            <p className="text-muted-foreground">Nenhum título encontrado com esses filtros.</p>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {recommendations.map((rec) => (
-            <RecommendationCard
-              key={rec.id}
-              rec={rec}
-              onClick={() => setSelectedRec({ tmdbId: rec.tmdb_id, mediaType: rec.media_type })}
-              onRemove={() => handleRemove(rec.id)}
-              canRemove={rec.user_id === userId || group.created_by === userId}
-              onComment={() => setSelectedComment({ recId: rec.id, title: rec.title })}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {paginated.map((rec) => (
+              <RecommendationCard
+                key={rec.id}
+                rec={rec}
+                onClick={() => setSelectedRec({ tmdbId: rec.tmdb_id, mediaType: rec.media_type })}
+                onRemove={() => handleRemove(rec.id)}
+                canRemove={rec.user_id === userId || group.created_by === userId}
+                onComment={() => setSelectedComment({ recId: rec.id, title: rec.title })}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-muted hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                    page === currentPage
+                      ? 'bg-primary text-white'
+                      : 'border border-muted hover:bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-muted hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {selectedRec && (

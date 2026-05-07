@@ -16,11 +16,11 @@ export default async function DashboardPage() {
 
   const { data: memberships } = await supabase
     .from('group_members')
-    .select('groups(id, name, description)')
+    .select('groups(id, name, description, avatar_url)')
     .eq('user_id', user!.id)
     .limit(4)
 
-  type GroupRow = { id: string; name: string; description: string | null }
+  type GroupRow = { id: string; name: string; description: string | null; avatar_url: string | null }
   const groups: GroupRow[] = (memberships ?? [])
     .flatMap((m) => (Array.isArray(m.groups) ? m.groups : m.groups ? [m.groups] : []))
     .filter((g): g is GroupRow => !!g && typeof g === 'object' && 'id' in g)
@@ -69,8 +69,12 @@ export default async function DashboardPage() {
                 className="bg-card border border-muted hover:border-primary/50 rounded-xl p-4 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                    {group.name[0].toUpperCase()}
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0 overflow-hidden">
+                    {group.avatar_url ? (
+                      <Image src={group.avatar_url} alt={group.name} width={40} height={40} className="object-cover w-full h-full" />
+                    ) : (
+                      group.name[0].toUpperCase()
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium truncate">{group.name}</p>
