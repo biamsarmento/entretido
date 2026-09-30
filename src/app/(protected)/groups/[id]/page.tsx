@@ -10,6 +10,7 @@ import MovieModal from '@/components/movies/MovieModal'
 import { deleteGroupAction, uploadGroupAvatarAction } from '@/app/actions/groups'
 import CommentsModal from '@/components/groups/CommentsModal'
 import Image from 'next/image'
+import { getGenreName } from '@/lib/genres'
 import type { Recommendation, TMDBSearchResult } from '@/types'
 
 interface GroupInfo {
@@ -47,6 +48,7 @@ export default function GroupPage() {
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all')
+  const [genreFilter, setGenreFilter] = useState<number | null>(null)
   const [sortOrder, setSortOrder] = useState<SortOrder>('recent')
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -77,13 +79,25 @@ export default function GroupPage() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  useEffect(() => { setCurrentPage(1) }, [mediaFilter, sortOrder])
+  useEffect(() => { setCurrentPage(1) }, [mediaFilter, genreFilter, sortOrder])
+
+  const availableGenres = useMemo(() => {
+    const genreSet = new Map<number, string>()
+    recommendations.forEach((r) => {
+      r.genre_ids?.forEach((id) => genreSet.set(id, getGenreName(id)))
+    })
+    return [...genreSet.entries()].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'))
+  }, [recommendations])
 
   const filtered = useMemo(() => {
     let list = [...recommendations]
 
     if (mediaFilter !== 'all') {
       list = list.filter((r) => r.media_type === mediaFilter)
+    }
+
+    if (genreFilter !== null) {
+      list = list.filter((r) => r.genre_ids?.includes(genreFilter))
     }
 
     if (sortOrder === 'az') {
@@ -105,7 +119,7 @@ export default function GroupPage() {
     }
 
     return list
-  }, [recommendations, mediaFilter, sortOrder])
+  }, [recommendations, mediaFilter, genreFilter, sortOrder])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
@@ -123,6 +137,7 @@ export default function GroupPage() {
       overview: result.overview,
       release_date: result.release_date || result.first_air_date || null,
       vote_average: result.vote_average,
+      genre_ids: result.genre_ids ?? [],
     })
     setShowSearch(false)
     loadData()
@@ -284,6 +299,20 @@ export default function GroupPage() {
               </button>
             ))}
           </div>
+
+          {/* Genre */}
+          {availableGenres.length > 0 && (
+            <select
+              value={genreFilter ?? ''}
+              onChange={(e) => setGenreFilter(e.target.value ? Number(e.target.value) : null)}
+              className="px-3 py-1.5 rounded-lg border border-muted bg-card text-sm text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+            >
+              <option value="">Todos os gêneros</option>
+              {availableGenres.map(([genreId, name]) => (
+                <option key={genreId} value={genreId}>{name}</option>
+              ))}
+            </select>
+          )}
 
           {/* Sort */}
           <select

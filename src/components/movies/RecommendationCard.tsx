@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Star, Trash2, MessageSquare } from 'lucide-react'
 import { POSTER_BASE } from '@/lib/tmdb'
 import { formatDate, formatRating } from '@/lib/utils'
+import { getGenreName } from '@/lib/genres'
 import type { Recommendation } from '@/types'
 
 interface Props {
@@ -30,10 +31,15 @@ export default function RecommendationCard({ rec, onClick, onRemove, canRemove, 
             <div className="w-full h-full flex items-center justify-center text-muted-foreground text-4xl">🎬</div>
           )}
           <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
             <span className="px-1.5 py-0.5 bg-black/70 text-white text-xs rounded">
               {rec.media_type === 'tv' ? 'Série' : 'Filme'}
             </span>
+            {rec.genre_ids?.length > 0 && (
+              <span className="px-1.5 py-0.5 bg-primary/80 text-white text-xs rounded">
+                {getGenreName(rec.genre_ids[0])}
+              </span>
+            )}
           </div>
         </div>
         <div className="p-3">

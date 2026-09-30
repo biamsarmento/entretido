@@ -6,7 +6,13 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center justify-between px-6 py-4 border-b border-muted">
-        <Image src="/brand/logo.png" alt="Entretido" width={180} height={100} className="object-cover" />
+        <Image
+          src="/brand/logo.png"
+          alt="Entretido"
+          width={180}
+          height={100}
+          className="object-cover"
+        />
         <div className="flex gap-3">
           <Link
             href="/login"
@@ -38,7 +44,7 @@ export default function LandingPage() {
               href="/signup"
               className="px-8 py-3 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium text-lg transition-colors"
             >
-              Começar grátis
+              Começar
             </Link>
             <Link
               href="/login"

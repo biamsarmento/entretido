@@ -36,6 +36,7 @@ export interface Recommendation {
   overview: string | null
   release_date: string | null
   vote_average: number | null
+  genre_ids: number[]
   recommended_at: string
   profiles?: Profile
 }
