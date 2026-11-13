@@ -5,7 +5,7 @@ import { Film, Users, Bookmark, Star } from "lucide-react";
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <div className="relative h-screen flex flex-col">
+      <div className="relative isolate h-screen flex flex-col">
       <Image
         src="/brand/cinema.jpg"
         alt=""
