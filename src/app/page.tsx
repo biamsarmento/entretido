@@ -5,7 +5,17 @@ import { Film, Users, Bookmark, Star } from "lucide-react";
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-muted">
+      <div className="relative h-screen flex flex-col">
+      <Image
+        src="/brand/cinema.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover -z-10"
+      />
+      <div className="absolute inset-0 bg-black/70 -z-10" />
+      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-6 py-4 bg-transparent">
         <Image
           src="/brand/logo.png"
           alt="Entretido"
@@ -29,7 +39,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24">
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-6 pt-24">
         <div className="max-w-2xl">
           <h1 className="text-5xl font-bold mb-6 leading-tight">
             Indique filmes e séries{" "}
@@ -55,8 +65,9 @@ export default function LandingPage() {
           </div>
         </div>
       </main>
+      </div>
 
-      <section className="px-6 pb-24">
+      <section className="px-6 py-24">
         <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             {
